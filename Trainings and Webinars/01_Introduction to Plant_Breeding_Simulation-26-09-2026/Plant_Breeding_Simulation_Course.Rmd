@@ -1,0 +1,1081 @@
+---
+title: "Introduction to Simulation of Plant Breeding Programs"
+author: "Joao Amaro Netto"
+email: "joao.netto@ufv.br"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: cosmo
+    highlight: tango
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 3
+    number_sections: true
+    code_folding: show
+    code_download: true
+    df_print: paged
+    fig_width: 8
+    fig_height: 5.2
+    fig_align: center
+    self_contained: true
+---
+
+<style>
+body {
+  font-family: "Avenir Next", "Segoe UI", Arial, sans-serif;
+  color: #263238;
+  line-height: 1.68;
+  background: #ffffff;
+}
+
+.main-container {
+  max-width: 1180px;
+}
+
+.title {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  margin-bottom: 12px;
+}
+
+.author, .date {
+  color: #607d8b;
+  font-size: 16px;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 700;
+  color: #16324f;
+  letter-spacing: -0.2px;
+}
+
+h1 {
+  margin-top: 42px;
+  margin-bottom: 22px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #dfe7ee;
+}
+
+h2 {
+  margin-top: 38px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid #e5ebf0;
+}
+
+h3 {
+  margin-top: 30px;
+}
+
+h4 {
+  margin-top: 24px;
+}
+
+p {
+  font-size: 16px;
+}
+
+blockquote {
+  margin: 24px 0;
+  padding: 14px 20px;
+  background: #f4f8fb;
+  border-left: 4px solid #5b8db8;
+  color: #405463;
+  border-radius: 0 6px 6px 0;
+}
+
+pre {
+  border: 1px solid #dce5ec;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(24, 48, 72, 0.06);
+  padding: 14px 16px;
+  background: #f8fafc;
+}
+
+code {
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 13.5px;
+}
+
+.sourceCode {
+  margin-bottom: 22px;
+}
+
+.table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#TOC {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.tocify {
+  border-radius: 8px;
+  border: 1px solid #dde6ed;
+  box-shadow: 0 2px 8px rgba(24, 48, 72, 0.05);
+}
+
+.tocify-item {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.figure {
+  margin: 28px auto;
+}
+
+img {
+  border-radius: 6px;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid #e5ebf0;
+  margin: 42px 0;
+}
+
+@media (max-width: 768px) {
+  .main-container {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .title {
+    font-size: 30px;
+  }
+}
+.output-toggle {
+  display: block;
+  margin: 6px 0 8px auto;
+  padding: 4px 10px;
+  border: 1px solid #dce5ec;
+  border-radius: 5px;
+  background: #f8fafc;
+  color: #405463;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.output-toggle:hover {
+  background: #eef3f7;
+}
+
+.output-hidden {
+  display: none !important;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  document.querySelectorAll("pre:not(.sourceCode)").forEach(function(output) {
+
+    if (!output.textContent.trim()) return;
+
+    var button = document.createElement("button");
+    button.className = "output-toggle";
+    button.textContent = "Hide output";
+
+    output.parentNode.insertBefore(button, output);
+
+    button.addEventListener("click", function() {
+
+      if (output.classList.contains("output-hidden")) {
+        output.classList.remove("output-hidden");
+        button.textContent = "Hide output";
+      } else {
+        output.classList.add("output-hidden");
+        button.textContent = "Show output";
+      }
+
+    });
+
+  });
+
+});
+</script>
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+## Working with the Simulation Script
+
+The following script brings together the concepts introduced throughout the course and implements complete breeding programs using AlphaSimR. Rather than treating the code as a collection of independent commands, we will use it to represent the flow of a breeding program over generations and calendar years.
+
+The script is organized into sequential sections, following the development of the breeding population from the initial population through selection, advancement, and variety development. We will first establish the genetic population and simulate the burn-in phase, and then use the resulting population as a common starting point for comparing alternative breeding strategies.
+
+Two main breeding pipelines are implemented: a conventional breeding pipeline and a genomic selection pipeline. The script also allows us to examine alternative selection strategies in a clonal breeding program.
+
+The code can be explored interactively. Code blocks can be expanded when you want to inspect the implementation, while outputs can be shown when you want to examine the results. The objective is not only to run the simulation, but to understand how each component of a breeding program is translated into a simulation model.
+
+### A simplified and introductory framework
+
+This course provides an introductory approach to the simulation of plant breeding programs. The breeding pipelines implemented here are simplified representations of real breeding programs and are intended primarily to illustrate the principles and concepts involved in breeding program simulation.
+
+Several biological, operational, and statistical aspects of real breeding programs are therefore not explicitly represented. The simulations also have inherent limitations associated with the assumptions, parameters, genetic architecture, population structure, and selection procedures used.
+
+Consequently, the results generated by these simulations should not be interpreted as direct predictions of the performance of a real breeding program. Instead, the simulations should be viewed as a framework for understanding how breeding decisions and program design can influence genetic change over time.
+
+As the concepts introduced in the course become more familiar, more complex simulations can be developed by incorporating additional biological, genetic, environmental, and operational factors.
+
+> **Note.** We use simplified parameters so that the code can run on most computers.
+
+### Base Initial Parameters
+
+```{r alphasimr-workflow}
+# AlphasimR
+
+library(AlphaSimR)
+
+# Founder genome
+founderGenomes = runMacs(nInd = 10, # Number of individuals that compose the base genome
+                         nChr = 10, # Number of chromosome pairs of the target species
+                         segSites = 100, # number of segregation sites 
+                         species = "GENERIC", # Available presets: MAIZE, WHEAT, CATTLE, GENERIC
+                         ploidy = 2) # Setting the ploidy
+
+# Object created
+founderGenomes
+
+# Genetic map of the segregation sites
+founderGenomes@genMap #The positions are in Morgan
+
+```
+
+```{r}
+
+# Global simulation parameters from founder genomes.
+SP = SimParam$new(founderGenomes)
+
+# Additive trait
+SP$addTraitA(nQtlPerChr = 15, # Number of QTL per chromosome
+             mean = 10,       # Trait mean
+             var = 10)        # Trait variance
+
+SP$addSnpChip(nSnpPerChr = 50)
+
+# QTL effects (for the traits)
+SP$traits[[1]]@addEff
+
+# Creating individuals/population
+basePop = newPop(founderGenomes)
+
+basePop
+
+# Gen param
+genParam(basePop)
+
+# Check the genotypes
+popGeno = pullSegSiteGeno(basePop)
+popGeno[, 1:10]
+
+```
+
+
+## Crossing and Early Population Development
+
+```{r}
+
+# Making crosses
+# 1. Crossing randomly
+F1pop = randCross(pop = basePop, nCrosses = 100)
+
+# 2. Make crosses by a list of individuals
+# Making the crossing plan
+MatingPlan = data.frame(Parent1 = basePop@id[1:5],
+                        Parent2 = basePop@id[6:10])
+MatingPlan
+
+# Crossing based on the crossing list
+F1pop = makeCross(basePop, crossPlan = as.matrix(MatingPlan))
+
+# Checking out the pedigree records out of F1
+Pedigree = data.frame(Ind = F1pop@id,
+                      Parent1 = F1pop@mother,
+                      Parent2 = F1pop@father)
+
+Pedigree 
+
+# Advancing F1 -> F2
+F2pop = self(pop = F1pop, nProgeny = 10)
+
+# Or making DH lines
+F2DHpop = makeDH(pop=F1pop, nDH=10) # Doubled Haploids
+
+# Setting phenotype
+F2pop = setPheno(F2pop, H2 = 0.2)
+
+cor(F2pop@gv, F2pop@pheno) # Correlation between genetic and phenotypic values
+
+
+```
+
+
+## The Stages of Lines Breeding Pipeline
+
+```{r}
+# Breeding pipeline
+#------------- Year 1 
+F1pop = randCross(pop = basePop, nCrosses = 45, nProgeny = 20) # Crossing block
+
+#------------- Year 2
+DHpop = makeDH(pop = F1pop, nDH = 10) # Doubled Haploids
+
+#------------- Year 3
+rowStage    = setPheno(pop = DHpop, H2 = 0.2)
+PrelimTrial = selectWithinFam(rowStage, nInd = 10, use = "pheno") 
+
+#------------- Year 4
+PrelimTrial = setPheno(PrelimTrial, H2 = 0.4)
+AdvancTrial = selectInd(PrelimTrial, nInd = 100, use = "pheno") # Preliminary Trial
+
+#------------- Year 5
+AdvancTrial = setPheno(AdvancTrial, H2 = 0.4)
+EliteTrial  = selectInd(AdvancTrial, nInd = 40, use = "pheno") # Advanced Trial
+
+#------------- Year 6
+EliteTrial = setPheno(EliteTrial, H2 = 0.4)
+Variety    = selectInd(EliteTrial, nInd = 10, use = "pheno") # Elite Trial
+
+meanG(Variety)
+varG(Variety)
+```
+
+
+## Selection Across Cycles
+
+```{r}
+
+# Looping it
+
+Cycles   = 5
+Parents  = Base_Parents = Variety # Saving base Parents
+
+results = data.frame(
+  Cycle = integer(),
+  MeanG = numeric(),
+  VarG  = numeric()
+)
+
+for (i in 1:Cycles) {
+
+  #------------- Year 1 
+  F1pop = randCross(pop = Parents, nCrosses = 50, nProgeny = 20)
+
+  #------------- Year 2
+  DHpop = makeDH(pop = F1pop, nDH = 10)
+
+  #------------- Year 3
+  rowStage    = setPheno(pop = DHpop, H2 = 0.05)
+  PrelimTrial = selectWithinFam(rowStage, nInd = 10, use = "pheno") 
+
+  #------------- Year 4
+  PrelimTrial = setPheno(PrelimTrial, H2 = 0.1)
+  AdvancTrial = selectInd(PrelimTrial, nInd = 100, use = "pheno")
+
+  #------------- Year 5
+  AdvancTrial = setPheno(AdvancTrial, H2 = 0.2)
+  EliteTrial  = selectInd(AdvancTrial, nInd = 40, use = "pheno")
+
+  #------------- Year 6
+  EliteTrial = setPheno(EliteTrial, H2 = 0.4)
+  Variety    = selectInd(EliteTrial, nInd = 10, use = "pheno")
+
+  Parents = Variety  # Variety used as parents for next cycle
+
+  # Checking genetic parameters
+  cat("Cycle: ", i, "\n")
+  cat("Mean of Genetic Values: ", meanG(Variety), "\n")
+  cat("Genetic Variance: ", varG(Variety), "\n")
+
+  results = rbind(results, data.frame(
+    Cycle = i,
+    MeanG = meanG(Variety),
+    VarG  = varG(Variety)
+  ))
+}
+
+```
+
+
+## Alternative Pipeline with Higher Heritability
+
+```{r}
+# Alternative pipeline using higher H2
+Parents = Base_Parents
+results_2 = data.frame(
+  Cycle = integer(),
+  MeanG = numeric(),
+  VarG  = numeric()
+)
+
+for (i in 1:Cycles) {
+
+  #------------- Year 1 
+  F1pop = randCross(pop = Parents, nCrosses = 50, nProgeny = 20)
+
+  #------------- Year 2
+  DHpop = makeDH(pop = F1pop, nDH = 10)
+
+  #------------- Year 3
+  rowStage    = setPheno(pop = DHpop, H2 = 0.05)
+  PrelimTrial = selectWithinFam(rowStage, nInd = 10, use = "pheno") 
+
+  #------------- Year 4
+  PrelimTrial = setPheno(PrelimTrial, H2 = 0.4)
+  AdvancTrial = selectInd(PrelimTrial, nInd = 100, use = "pheno")
+
+  #------------- Year 5
+  AdvancTrial = setPheno(AdvancTrial, H2 = 0.6)
+  EliteTrial  = selectInd(AdvancTrial, nInd = 40, use = "pheno")
+
+  #------------- Year 6
+  EliteTrial = setPheno(EliteTrial, H2 = 0.8)
+  Variety    = selectInd(EliteTrial, nInd = 10, use = "pheno")
+
+  Parents = Variety  # Variety used as parents for next cycle
+
+  # Checking genetic parameters
+  cat("Mean of Genetic Values: ", meanG(Variety), "\n")
+  cat("Genetic Variance: ", varG(Variety), "\n")
+
+  results_2 = rbind(results_2, data.frame(
+    Cycle = i,
+    MeanG = meanG(Variety),
+    VarG  = varG(Variety)
+  ))
+}
+
+# Adding cycle zero
+row_0 = data.frame(
+  Cycle = 0,
+  MeanG = meanG(Base_Parents),
+  Trait1 = varG(Base_Parents)
+)
+
+results    = rbind(row_0, results)
+results_2 = rbind(row_0, results_2)
+rownames(results) = rownames(results_2) = NULL
+
+
+```
+
+
+```{r}
+# Plotting results
+library(ggplot2)
+
+ggplot() +
+  geom_smooth(data = results, aes(x = Cycle, y = MeanG, color = "Low H2"), size = 1) +
+  geom_smooth(data = results_2, aes(x = Cycle, y = MeanG, color = "High H2"), size = 1) +
+  labs(x = "Cycle", y = "MeanG", color = " ") +
+  theme_minimal()
+
+ggplot() +
+  geom_smooth(data = results, aes(x = Cycle, y = Trait1, color = "Low H2"), size = 1) +
+  geom_smooth(data = results_2, aes(x = Cycle, y = Trait1, color = "High H2"), size = 1) +
+  labs(x = "Cycle", y = "VarG", color = " ") +
+  theme_minimal()
+
+```
+
+## From Cycles to Years
+
+If we aim to compare different breeding designs and measure by year, not cycles, such as a conventional breeding pipeline versus a GS pipeline, we have to invert the pipeline. To to this, first we have to fill the pipeline. This aims to reproduce the different breeding stages and actions over time, allowing us to evaluate and compare the outcomes of competing strategies across multiple years.
+
+```{r}
+#Filling the pipeline
+
+Parents = basePop
+trials = 6
+for(trial in 1:trials){
+  cat("  FillPipeline stage:",trial,"of 6\n")
+  if(trial<6){
+    # Stage 1
+  F1pop = randCross(pop = Parents, nCrosses = 45, nProgeny = 20)
+  }
+  if(trial<5){
+    # Stage 2
+  F2pop = self(pop = F1pop, nProgeny = 10) 
+  rowStage = setPheno(pop = F2pop, H2 = 0.05)
+        }
+  if(trial<4){
+    # Stage 3
+  PrelimTrial = selectWithinFam(rowStage, nInd = 5, use = "pheno") 
+  PrelimTrial = self(PrelimTrial, nProgeny = 1)
+  PrelimTrial = setPheno(PrelimTrial, H2 = 0.2)
+  }
+  if(trial<3){
+    # Stage 4
+  AdvancTrial = selectInd(PrelimTrial, nInd = 50, use = "pheno")
+  AdvancTrial = self(AdvancTrial, nProgeny = 1)
+  AdvancTrial = setPheno(AdvancTrial, H2 = 0.4)
+  }
+  if(trial<2){
+    # Stage 5
+    
+  EliteTrial  = selectInd(AdvancTrial, nInd = 10, use = "pheno")
+  EliteTrial = self(EliteTrial, nProgeny = 1)
+  EliteTrial = setPheno(EliteTrial, H2 = 0.6)
+
+  }
+  if(trial<1){
+    # Stage 6
+ Variety = selectInd(EliteTrial, nInd = 1, use = "pheno")
+  }
+}
+
+
+```
+
+### Burn-in
+
+And we have to make the Burn-in. The burn-in phase allows the simulated breeding population to reach a realistic genetic state before testing alternative breeding strategies. It establishes the population structure, genetic variation, and other properties expected under the baseline breeding program, providing a common starting point for comparing future scenarios.
+
+
+```{r}
+#Advancing 20 years of conventional lines breeding program 
+
+nBurnin = 20
+
+results_Bn = data.frame(
+  nBurnin = integer(),
+  MeanG = numeric(),
+  VarG  = numeric()
+)
+
+for (year in 1:nBurnin){
+  
+# Stage 6
+  Variety = selectInd(EliteTrial, nInd = 1, use = "pheno")
+  Parents = EliteTrial
+  
+# Stage 5
+  EliteTrial  = selectInd(AdvancTrial, nInd = 10, use = "pheno")
+  EliteTrial = self(EliteTrial, nProgeny = 1)
+  EliteTrial = setPheno(EliteTrial, H2 = 0.8)
+
+
+# Stage 4
+  AdvancTrial = selectInd(PrelimTrial, nInd = 50, use = "pheno")
+  AdvancTrial = self(AdvancTrial, nProgeny = 1)
+  AdvancTrial = setPheno(AdvancTrial, H2 = 0.6)
+
+# Stage 3
+  PrelimTrial = selectWithinFam(rowStage, nInd = 5, use = "pheno") 
+  PrelimTrial = self(PrelimTrial, nProgeny = 1)
+  PrelimTrial = setPheno(PrelimTrial, H2 = 0.4)
+
+# Stage 2
+  F2pop = self(pop = F1pop, nProgeny = 10) 
+  rowStage = setPheno(pop = F2pop, H2 = 0.05)
+
+# Stage 1
+  F1pop = randCross(pop = Parents, nCrosses = 45, nProgeny = 20)
+
+cat("Genetic mean : ", meanG(EliteTrial), "\n")
+cat("Genetic variance : ", varG(EliteTrial), "\n")
+
+  results_Bn = rbind(results_Bn, data.frame(
+    year = year,
+    MeanG = meanG(EliteTrial),
+    VarG  = varG(EliteTrial)))
+  
+  if ( year == 18){
+    TrainPop = c(PrelimTrial, AdvancTrial, EliteTrial)
+  }
+  
+    if (year == 19 |year == 20 ){
+    TrainPop = c(TrainPop, PrelimTrial, AdvancTrial, EliteTrial)
+    }
+  
+
+  
+}
+
+ggplot() +
+  geom_line(data = results_Bn, aes(x = year, y = MeanG), size = 1) +
+  labs(x = "Year", y = "MeanG", color = " ") +
+  theme_minimal()
+
+
+TrainPop
+
+#Notice that we have selected the last three years (18, 19 and 20) of trials as our Genomic Selection Training Population 
+
+
+```
+
+
+
+
+Because of the script architecture, when we measure the gains by year, we see the increasing of the genetic values as a zig zag. But this is ok, it is just the code structure. 
+
+## Comparing Conventional and Genomic Selection
+
+Before comparing the two breeding strategies, the structure of each pipeline is shown below.
+
+### Conventional Breeding Pipeline Design
+
+<div align="center">
+<img src="Conventional.png" width="85%">
+</div>
+
+### Genomic Selection Pipeline Design
+
+<div align="center">
+<img src="GS.png" width="85%">
+</div>
+
+Now that we have done the Burn-In, we have our breeding population, that has passed through selections and has a genetic struture similar as real breeding populations. Now we can use this population as a starting point to do our comparisons.
+
+```{r}
+
+#Here we are saving the starting population, because this objects will change during the conventional pipeline.
+
+Parents1 = Parents
+Variety1 = Variety
+EliteTrial1 = EliteTrial
+AdvancTrial1 = AdvancTrial 
+PrelimTrial1 = PrelimTrial
+F2pop1 = F2pop
+F1pop1 = F1pop
+
+
+TrainPop1 = TrainPop # Saving the first training population for the Genomic Selection pipeline
+```
+
+
+### Conventional Breeding Pipeline
+
+#Conventional pipeline
+```{r}
+ years = 20 #20 years of conventional lines breeding program
+
+results_Pheno = data.frame(
+  year = integer(),
+  MeanG = numeric(),
+  VarG  = numeric()
+)
+
+for (year in 1:years){
+  
+# Stage 6
+  Variety = selectInd(EliteTrial, nInd = 1, use = "pheno")
+  Parents = EliteTrial
+  
+# Stage 5
+  EliteTrial  = selectInd(AdvancTrial, nInd = 10, use = "pheno")
+  EliteTrial = self(EliteTrial, nProgeny = 1)
+  EliteTrial = setPheno(EliteTrial, H2 = 0.8)
+
+
+# Stage 4
+  AdvancTrial = selectInd(PrelimTrial, nInd = 50, use = "pheno")
+  AdvancTrial = self(AdvancTrial, nProgeny = 1)
+  AdvancTrial = setPheno(AdvancTrial, H2 = 0.6)
+
+# Stage 3
+  PrelimTrial = selectWithinFam(rowStage, nInd = 5, use = "pheno") 
+  PrelimTrial = self(PrelimTrial, nProgeny = 1)
+  PrelimTrial = setPheno(PrelimTrial, H2 = 0.4)
+
+# Stage 2
+  F2pop = self(pop = F1pop, nProgeny = 10) 
+  rowStage = setPheno(pop = F2pop, H2 = 0.05)
+ 
+  cat("Pheno accuracy: ", cor(rowStage@gv, rowStage@pheno), "\n")
+
+# Stage 1
+  F1pop = randCross(pop = Parents, nCrosses = 45, nProgeny = 20)
+
+cat("Genetic mean : ", meanG(EliteTrial), "\n")
+cat("Genetic variance : ", varG(EliteTrial), "\n")
+
+  results_Pheno = rbind(results_Pheno, data.frame(
+    year = year,
+    MeanG = meanG(EliteTrial),
+    VarG  = varG(EliteTrial),
+    acc = cor(rowStage@gv, rowStage@pheno)[1,1]))
+}
+
+```
+
+### Genomic Selection Pipeline
+
+
+```{r}
+ years = 20 #20 years of Genomic Selection lines Breeding Program
+
+#Recovering original population, because this objects were edited during the conventional pipeline
+
+Parents = Parents1
+Variety = Variety1
+EliteTrial = EliteTrial1
+AdvancTrial = AdvancTrial1
+PrelimTrial = PrelimTrial1
+F2pop = F2pop1
+F1pop = F1pop1
+
+TrainPop = TrainPop1
+
+results_GS= data.frame(
+  year = integer(),
+  MeanG = numeric(),
+  VarG  = numeric()
+)
+
+for (year in 1:years){
+  
+  GS.model = RRBLUP(TrainPop, use = "pheno")
+  
+# Stage 5
+  Variety = selectInd(EliteTrial, nInd = 1, use = "pheno")
+  Parents = EliteTrial
+  
+# Stage 4
+  EliteTrial  = selectInd(AdvancTrial, nInd = 10, use = "pheno")
+  EliteTrial = self(EliteTrial, nProgeny = 1)
+  EliteTrial = setPheno(EliteTrial, H2 = 0.8)
+
+# Stage 3
+  AdvancTrial = selectInd(PrelimTrial, nInd = 50, use = "pheno")
+  AdvancTrial = self(AdvancTrial, nProgeny = 1)
+  AdvancTrial = setPheno(AdvancTrial, H2 = 0.6)
+
+# Stage 2
+  F2pop = self(pop = F1pop, nProgeny = 10) 
+  F2pop = setEBV(pop = F2pop, GS.model) # We are applying GS on this stage
+  #Notice we don't have rowStage anymore, 
+  #because there is no need for phenotyping. Therefore we remove one stage e save one year.
+  
+  cat("GS accuracy: ", cor(F2pop@gv, F2pop@ebv), "\n")
+
+  PrelimTrial = selectWithinFam(F2pop, nInd = 5, use = "ebv") 
+  PrelimTrial = self(PrelimTrial, nProgeny = 1)
+  PrelimTrial = setPheno(PrelimTrial, H2 = 0.4)
+
+  # Saving the training population for the next Genomic Selection pipeline
+  TrainPop = c(TrainPop[-((length(TrainPop) - c(PrelimTrial, AdvancTrial, EliteTrial)@nInd + 1):length(TrainPop))],
+               PrelimTrial, AdvancTrial, EliteTrial)
+
+# Stage 1
+  F1pop = randCross(pop = Parents, nCrosses = 45, nProgeny = 20)
+
+  cat("Genetic mean : ", meanG(EliteTrial), "\n")
+  cat("Genetic variance : ", varG(EliteTrial), "\n")
+
+  results_GS = rbind(results_GS, data.frame(
+    year = year,
+    MeanG = meanG(EliteTrial),
+    VarG  = varG(EliteTrial),
+    acc = cor(F2pop@gv, F2pop@ebv)[1, 1]))
+}
+
+```
+```{r}
+#Inserting initial parents information
+
+row_0 = data.frame(
+  year = 0,
+  MeanG = meanG(Parents1),
+  Trait1 = varG(Parents1),
+  acc = NA
+)
+
+
+results_Pheno    = rbind(row_0, results_Pheno)
+results_GS = rbind(row_0, results_GS)
+```
+
+
+```{r}
+# Plotting results
+
+ggplot() +
+  geom_smooth(data = results_Pheno, aes(x = year, y = MeanG, color = "Conventional pipeline"), size = 1) +
+  geom_smooth(data = results_GS, aes(x = year, y = MeanG, color = "GS pipeline"), size = 1) +
+  labs(x = "Year", y = "MeanG", color = " ") +
+  theme_minimal()
+
+ggplot() +
+  geom_smooth(data = results_Pheno, aes(x = year, y = Trait1, color = "Conventional pipeline"), size = 1) +
+  geom_smooth(data = results_GS, aes(x = year, y = Trait1, color = "GS pipeline"), size = 1) +
+  labs(x = "Year", y = "VarG", color = " ") +
+  theme_minimal()
+
+ggplot() +
+  geom_smooth(data = results_Pheno, aes(x = year, y = acc, color = "Conventional pipeline"), size = 1) +
+  geom_smooth(data = results_GS, aes(x = year, y = acc, color = "GS pipeline"), size = 1) +
+  labs(x = "Year", y = "Acc", color = " ") +
+  theme_minimal()
+
+
+```
+
+### Repeated Replications
+
+It is important to highlight that, for more consistent results, we need to run several replications to obtain more reliable estimates.
+
+
+## Clonal Breeding Program
+
+
+### Founder Population and Genetic Architecture
+
+
+```{r}
+# Founder genome
+founderGenomes = runMacs(nInd = 10, # Number of individuals that compose the base genome
+                         nChr = 10, # Number of chromosome pairs of the target species
+                         segSites = 100, # number of segregation sites 
+                         species = "GENERIC", # Available presets: MAIZE, WHEAT, CATTLE, GENERIC
+                         ploidy = 4) # Setting the ploidy
+
+
+# Global simulation parameters from founder genomes.
+SP = SimParam$new(founderGenomes)
+
+# Additive trait
+SP$addTraitAD(nQtlPerChr = 15, # Number of QTL per chromosome
+             mean = 10,       # Trait mean
+             var = 5,       # Trait variance
+             meanDD = 5)       # This time we are using Dominance effects 
+
+# Creating individuals/population
+basePop = newPop(founderGenomes)
+
+pullQtlGeno(basePop)
+
+```
+
+### Filling the Clonal Pipeline
+
+
+```{r}
+#Filling the pipeline
+
+Parents = basePop
+trials = 3
+for(trial in 1:trials){
+  cat("  FillPipeline stage:",trial,"of 3\n")
+  if(trial<3){
+    # Stage 1
+  C1pop = randCross(pop = Parents, nCrosses = 40, nProgeny = 200)
+  }
+  if(trial<2){
+    # Stage 2
+  C1pop = setPheno(pop = C1pop, H2 = 0.2)
+  C2pop = selectInd(pop = C1pop, nInd = 100, use = "pheno") 
+  
+        }
+  if(trial<1){
+    # Stage 3
+    
+  C2pop = setPheno(pop = C2pop, H2 = 0.4)
+  C2pop = selectInd(pop = C2pop, nInd = 10, use = "pheno") 
+  Variety = selectInd(C2pop, nInd = 1, use = "pheno")
+
+  }
+}
+
+
+```
+
+### Clonal Program Burn-in
+
+```{r}
+#Advancing 20 years of conventional lines breeding program 
+
+nBurnin = 20
+
+results_Bn = data.frame(
+  nBurnin = integer(),
+  MeanG = numeric(),
+  VarG  = numeric()
+)
+
+for (year in 1:nBurnin){
+  
+  # Stage 3
+  C2pop = setPheno(pop = C2pop, H2 = 0.4)
+  Variety = selectInd(C2pop, nInd = 1, use = "pheno")
+  Parents = selectInd(pop = C2pop, nInd = 10, use = "pheno") 
+  
+  # Stage 2
+  C1pop = setPheno(pop = C1pop, H2 = 0.2)
+  C2pop = selectInd(pop = C1pop, nInd = 80, use = "pheno") 
+
+  # Stage 1
+  C1pop = randCross(pop = Parents, nCrosses = 40, nProgeny = 200)
+
+  cat("Genetic mean : ", meanG(C2pop), "\n")
+  cat("Genetic variance : ", varG(C2pop), "\n")
+
+  results_Bn = rbind(results_Bn, data.frame(
+    year = year,
+    MeanG = meanG(C2pop),
+    VarG  = varG(C2pop)))
+  
+}
+  
+ggplot() +
+  geom_smooth(data = results_Bn, aes(x = year, y = MeanG), size = 1) +
+  labs(x = "Year", y = "MeanG", color = " ") +
+  theme_minimal()
+
+```
+
+Now that we have the starting population, we can compare different breeding programs. Let’s imagine that we want to evaluate whether it is better to select within families or to select directly among individuals.
+
+### Two Clonal Breeding Pipeline
+
+<div align="center">
+<img src="Clonal.png" width="85%">
+</div>
+
+
+```{r}
+#Saving the starting population.
+
+Parents1 = Parents
+Variety1 = Variety
+C2pop1 = C2pop
+C1pop1 = C2pop 
+
+
+```
+
+
+#### Direct Selection of Individuals
+
+The first program is going to make direct selection of individuals in C1:  
+
+```{r}
+#Advancing a 20-year clonal breeding program by selecting individuals directly in C1.
+years = 20
+
+results_Ind = data.frame(
+  year = integer(),
+  MeanG = numeric(),
+  VarG  = numeric()
+)
+
+for (year in 1:years){
+  
+  # Stage 3
+  C2pop = setPheno(pop = C2pop, H2 = 0.4)
+  Variety = selectInd(C2pop, nInd = 1, use = "pheno")
+  Parents = selectInd(pop = C2pop, nInd = 10, use = "pheno") 
+  
+  # Stage 2
+  C1pop = setPheno(pop = C1pop, H2 = 0.2)
+  C2pop = selectInd(pop = C1pop, nInd = 80, use = "pheno") 
+
+  # Stage 1
+  C1pop = randCross(pop = Parents, nCrosses = 40, nProgeny = 200)
+
+  cat("Genetic mean : ", meanG(C2pop), "\n")
+  cat("Genetic variance : ", varG(C2pop), "\n")
+
+  results_Ind = rbind(results_Ind, data.frame(
+    year = year,
+    MeanG = meanG(C2pop),
+    VarG  = varG(C2pop)))
+  
+}
+  
+
+
+```
+
+#### Selection Within Families
+
+The second program is going to make selection of individuals within families in C1:  
+
+```{r}
+#Advancing a 20-year clonal breeding program by selecting individuals within families in C1.
+
+years = 20
+
+#Recovering original population
+
+Parents = Parents1
+Variety = Variety1
+C2pop = C2pop1
+C1pop = C2pop1
+
+results_Fam = data.frame(
+  year = integer(),
+  MeanG = numeric(),
+  VarG  = numeric()
+)
+
+for (year in 1:years){
+  
+  # Stage 3
+  C2pop = setPheno(pop = C2pop, H2 = 0.4)
+  Variety = selectInd(C2pop, nInd = 1, use = "pheno")
+  Parents = selectInd(pop = C2pop, nInd = 10, use = "pheno") 
+  
+  # Stage 2
+  C1pop = setPheno(pop = C1pop, H2 = 0.2)
+  C2pop = selectWithinFam(pop = C1pop, nInd = 5, use = "pheno") #Selecting within families
+  C2pop = selectInd(pop = C2pop, nInd = 80, use = "pheno") 
+
+  # Stage 1
+  C1pop = randCross(pop = Parents, nCrosses = 40, nProgeny = 200)
+
+  cat("Genetic mean : ", meanG(C2pop), "\n")
+  cat("Genetic variance : ", varG(C2pop), "\n")
+
+  results_Fam = rbind(results_Fam, data.frame(
+    year = year,
+    MeanG = meanG(C2pop),
+    VarG  = varG(C2pop)))
+  
+}
+  
+
+```
+
+
+```{r}
+#Inserting initial parents information
+
+row_0 = data.frame(
+  year = 0,
+  MeanG = meanG(Parents1),
+  Trait1 = varG(Parents1)
+)
+
+
+results_Ind    = rbind(row_0, results_Ind)
+results_Fam = rbind(row_0, results_Fam)
+```
+
+
+```{r}
+
+
+ggplot() +
+  geom_smooth(data = results_Ind, aes(x = year, y = MeanG, color = "Selection of Individuals"), size = 1) +
+  geom_smooth(data = results_Fam, aes(x = year, y = MeanG, color = "Selection Within Families"), size = 1) +
+  labs(x = "Year", y = "MeanG", color = " ") +
+  theme_minimal()
+
+ggplot() +
+  geom_smooth(data = results_Ind, aes(x = year, y = Trait1, color = "Selection of Individuals"), size = 1) +
+  geom_smooth(data = results_Fam, aes(x = year, y = Trait1, color = "Selection Within Families"), size = 1) +
+  labs(x = "Year", y = "VarG", color = " ") +
+  theme_minimal()
+
+
+```
+
+For more details: For a practical introduction to breeding program simulation with AlphaSimR, see Bančič et al. (2024), Plant breeding simulations with AlphaSimR. The paper provides a systematic approach to designing breeding program simulations and includes examples of self-pollinated, clonal, and hybrid breeding programs. For details on individual AlphaSimR functions, arguments, and examples, consult the official AlphaSimR documentation.
